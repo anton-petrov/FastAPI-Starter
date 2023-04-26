@@ -1,0 +1,307 @@
+{
+  "simulationParameters": {
+    "InitialBitDepth": 3999,
+    "InitialWellDepth": 4000,
+    "SensorPositions": [600, 1100, 3000, 4000],
+    "SimulationStep": [
+      {
+        "Time": 3600,
+        "StringSpeed": 0.003,
+        "RotationalSpeed": 12.566371,
+        "PumpRate": 0.033333333,
+        "FluidNo": 0,
+        "FluidDensityIn": 1500,
+        "FluidTempIn": 303.15,
+        "circulationSubActivation": 0
+      }
+    ]
+  },
+  "trajectory": {
+    "stations": [
+      {
+        "MD": 0,
+        "Incl": 0,
+        "Azi": 0
+      },
+      {
+        "MD": 500,
+        "Incl": 0,
+        "Azi": 0
+      },
+      {
+        "MD": 2000,
+        "Incl": 0.35,
+        "Azi": 1.52
+      },
+      {
+        "MD": 5000,
+        "Incl": 0.79,
+        "Azi": 0.93
+      }
+    ]
+  },
+  "tubular": {
+    "nozzles": {
+      "totalFlowArea": 0.0009425
+    },
+    "components": [
+      {
+        "Order": [0],
+        "ID": 0.0635,
+        "OD": 0.235,
+        "ODMx": 0.235,
+        "Len": 0.3,
+        "TypeIdentifier": "bit",
+        "ConnectionID": 0.0635,
+        "ConnectionOD": 0.235,
+        "ConnectionLen": 0.06
+      },
+      {
+        "Order": [[1, 500]],
+        "ID": 0.121361,
+        "OD": 0.1397,
+        "ODMx": 0.1397,
+        "Len": 9.5,
+        "TypeIdentifier": "bit",
+        "ConnectionID": 0.1016,
+        "ConnectionOD": 0.1778,
+        "ConnectionLen": 0.3
+      }
+    ],
+    "DistanceFromBitToPWD": 10
+  },
+  "wbgeometry": {
+    "GapAir": 0,
+    "sections": [
+      {
+        "type": "riser",
+        "MDTop": 0,
+        "MDBottom": 49,
+        "ID": 0.35,
+        "OD": 0.51,
+        "Roughness": 0
+      },
+      {
+        "type": "casing",
+        "MDTop": 49,
+        "MDBottom": 1707,
+        "ID": 0.25,
+        "OD": 0.28,
+        "HoleDiam": 0.31,
+        "Roughness": 0
+      }
+    ]
+  },
+  "temperatureprofile": {
+    "type": "static",
+    "stations": [
+      {
+        "TVD": 0,
+        "temperature": 288
+      },
+      {
+        "TVD": 980,
+        "temperature": 305
+      },
+      {
+        "TVD": 1800,
+        "temperature": 338
+      }
+    ]
+  },
+  "fluid": {
+    "fluids": [
+      {
+        "type": "base-oil",
+        "rheologyData": {
+          "field": {
+            "temperature": 325.15,
+            "pressure": 101325,
+            "measurements": [
+              {
+                "speed": 3,
+                "reading": 13
+              },
+              {
+                "speed": 6,
+                "reading": 15
+              },
+              {
+                "speed": 100,
+                "reading": 41
+              },
+              {
+                "speed": 200,
+                "reading": 62
+              },
+              {
+                "speed": 300,
+                "reading": 82
+              },
+              {
+                "speed": 600,
+                "reading": 138
+              }
+            ]
+          }
+        },
+        "gelling": {
+          "gelDecayTime": 29.5,
+          "gellingData": [
+            {
+              "pressure": 100000,
+              "temperature": 322.039,
+              "gelStrengths": [
+                {
+                  "time": 10,
+                  "strength": 17
+                },
+                {
+                  "time": 600,
+                  "strength": 24
+                },
+                {
+                  "time": 1800,
+                  "strength": 25
+                }
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "oilRatio": 0.199,
+          "waterRatio": 0.801,
+          "density": {
+            "value": 1458.3
+          },
+          "thermal": {},
+          "fluidPvt": {
+            "temperature": [
+              277.594, 310.928, 338.706, 366.483, 394.261, 422.039, 449.817,
+              477.594, 505.372
+            ],
+            "pressureVolume": [
+              {
+                "pressure": 103421,
+                "density": [
+                  820.515, 799.177, 781.395, 763.613, 745.831, 728.049, 710.267,
+                  692.485, 674.703
+                ]
+              },
+              {
+                "pressure": 344738,
+                "density": [
+                  820.642, 799.333, 781.575, 763.817, 746.059, 728.301, 710.543,
+                  692.785, 675.027
+                ]
+              },
+              {
+                "pressure": 861845,
+                "density": [
+                  820.913, 799.666, 781.959, 764.253, 746.547, 728.841, 711.134,
+                  693.428, 675.722
+                ]
+              },
+              {
+                "pressure": 1723690,
+                "density": [
+                  821.364, 800.219, 782.599, 764.978, 747.357, 729.737, 712.116,
+                  694.495, 676.874
+                ]
+              },
+              {
+                "pressure": 3447380,
+                "density": [
+                  822.265, 801.323, 783.871, 766.42, 748.968, 731.517, 714.065,
+                  696.614, 679.162
+                ]
+              },
+              {
+                "pressure": 6894760,
+                "density": [
+                  824.057, 803.512, 786.391, 769.271, 752.15, 735.029, 717.909,
+                  700.788, 683.667
+                ]
+              },
+              {
+                "pressure": 13789500,
+                "density": [
+                  827.609, 807.822, 791.333, 774.843, 758.354, 741.864, 725.375,
+                  708.886, 692.396
+                ]
+              },
+              {
+                "pressure": 27579000,
+                "density": [
+                  834.582, 816.164, 800.817, 785.469, 770.121, 754.774, 739.426,
+                  724.078, 708.73
+                ]
+              },
+              {
+                "pressure": 41368500,
+                "density": [
+                  841.379, 824.138, 809.77, 795.403, 781.035, 766.668, 752.3,
+                  737.933, 723.565
+                ]
+              },
+              {
+                "pressure": 55158100,
+                "density": [
+                  848.001, 831.742, 818.193, 804.644, 791.096, 777.547, 763.998,
+                  750.449, 736.9
+                ]
+              },
+              {
+                "pressure": 68947600,
+                "density": [
+                  854.447, 838.977, 826.086, 813.194, 800.303, 787.411, 774.519,
+                  761.628, 748.736
+                ]
+              },
+              {
+                "pressure": 82737100,
+                "density": [
+                  860.718, 845.843, 833.448, 821.052, 808.656, 796.26, 783.865,
+                  771.469, 759.073
+                ]
+              },
+              {
+                "pressure": 96526600,
+                "density": [
+                  866.814, 852.34, 840.279, 828.217, 816.156, 804.095, 792.033,
+                  779.972, 767.911
+                ]
+              },
+              {
+                "pressure": 110316000,
+                "density": [
+                  872.734, 858.468, 846.58, 834.691, 822.803, 810.914, 799.026,
+                  787.137, 775.249
+                ]
+              },
+              {
+                "pressure": 124106000,
+                "density": [
+                  878.479, 864.227, 852.35, 840.473, 828.596, 816.719, 804.842,
+                  792.965, 781.088
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "formations": {
+    "CuttingsDensity": 2600,
+    "CuttingsDiameter": 0.00635,
+    "stations": [
+      {
+        "TVD": 50
+      },
+      {
+        "TVD": 500
+      }
+    ]
+  }
+}

@@ -1,0 +1,260 @@
+version: "3.9"
+
+services:
+  proxy:
+    image: traefik:latest
+    restart: always
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "8090:8080"
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Add a constraint to only use services with the label for this stack
+      # from the env var TRAEFIK_TAG
+      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      # Expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=true
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      - --api
+      # Enable the Dashboard and API in insecure mode for local development
+      - --api.insecure=true
+    labels:
+      # Enable Traefik for this service, to make it available in the public network
+      - traefik.enable=true
+      # Use the traefik-public network (declared below)
+      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      # Use the custom label "traefik.constraint-label=traefik-public"
+      # This public Traefik will only use services with this label
+      - providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      # traefik-http set up only to use the middleware to redirect to https
+      - traefik.http.middlewares.${PROJECT_NAME?Variable not set}-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.${PROJECT_NAME?Variable not set}-https-redirect.redirectscheme.permanent=true
+      # Handle host with and without "www" to redirect to only one of them
+      # Uses environment variable DOMAIN
+      # To disable www redirection remove the Host() you want to discard, here and
+      # below for HTTPS
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-http.rule=Host(`${DOMAIN?Variable not set}`) || Host(`www.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-http.entrypoints=http
+      # traefik-https the actual router using HTTPS
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-https.rule=Host(`${DOMAIN?Variable not set}`) || Host(`www.${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-https.entrypoints=https
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-https.tls=true
+      # Use the "le" (Let's Encrypt) resolver created below
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-https.tls.certresolver=le
+      # Define the port inside of the Docker service to use
+      - traefik.http.services.${PROJECT_NAME?Variable not set}-proxy.loadbalancer.server.port=80
+      # Handle domain with and without "www" to redirect to only one
+      # To disable www redirection remove the next line
+      - traefik.http.middlewares.${PROJECT_NAME?Variable not set}-www-redirect.redirectregex.regex=^https?://(www.)?(${DOMAIN?Variable not set})/(.*)
+      # Redirect a domain with www to non-www
+      # To disable it remove the next line
+      - traefik.http.middlewares.${PROJECT_NAME?Variable not set}-www-redirect.redirectregex.replacement=https://${DOMAIN?Variable not set}/$${3}
+      # Redirect a domain without www to www
+      # To enable it remove the previous line and uncomment the next
+      # - traefik.http.middlewares.${PROJECT_NAME}-www-redirect.redirectregex.replacement=https://www.${DOMAIN}/$${3}
+      # Middleware to redirect www, to disable it remove the next line
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-https.middlewares=${PROJECT_NAME?Variable not set}-www-redirect
+      # Middleware to redirect www, and redirect HTTP to HTTPS
+      # to disable www redirection remove the section: ${PROJECT_NAME?Variable not set}-www-redirect,
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-proxy-http.middlewares=${PROJECT_NAME?Variable not set}-www-redirect,${PROJECT_NAME?Variable not set}-https-redirect
+      - traefik.http.routers.${PROJECT_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.services.${PROJECT_NAME?Variable not set}-traefik-public.loadbalancer.server.port=80
+
+  api:
+    build:
+      context: .
+      target: production
+      dockerfile: ./deploy/api.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    image: project-api:${project_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    labels:
+      # Enables traefik for this container
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${PROJECT_NAME}
+      - traefik.http.routers.project.rule=PathPrefix(`/api`) || PathPrefix(`/static`)  || Host(`${project_TRAEFIK_HOST:-project.localhost}`)
+      - traefik.http.routers.project.entrypoints=http
+      - traefik.http.routers.project.service=project
+      - traefik.http.services.project.loadbalancer.server.port=${project_PORT:-8000}
+    networks:
+      - default
+      - traefik-shared
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+    environment:
+      project_HOST: 0.0.0.0
+      project_DB_HOST: project-db
+      project_DB_PORT: 5432
+      project_DB_USER: project
+      project_DB_PASS: project
+      project_DB_BASE: project
+      project_RABBIT_HOST: project-rmq
+    logging:
+      options:
+        mode: "non-blocking"
+        max-buffer-size: "5m"
+        max-size: "50m"
+        max-file: "3"
+
+  worker:
+    build:
+      context: .
+      target: production
+      dockerfile: ./deploy/worker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    image: project-worker:${project_VERSION:-latest}
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - default
+      - traefik-shared
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rmq:
+        condition: service_healthy
+    environment:
+      RUN: celery -A project.queue.worker worker -l info -Q ${DMP_QUEUE_NAME:-project-queue} -c 1
+      project_HOST: 0.0.0.0
+      project_DB_HOST: project-db
+      project_DB_PORT: 5432
+      project_DB_USER: project
+      project_DB_PASS: project
+      project_DB_BASE: project
+      project_RABBIT_HOST: project-rmq
+    logging:
+      options:
+        mode: "non-blocking"
+        max-buffer-size: "5m"
+        max-size: "50m"
+        max-file: "3"
+
+  db:
+    image: postgres:15.1-bullseye
+    hostname: project-db
+    environment:
+      POSTGRES_PASSWORD: "project"
+      POSTGRES_USER: "project"
+      POSTGRES_DB: "project"
+    volumes:
+      - project-pg-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U project
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  mongodb:
+    image: mongo:6.0.3-focal
+
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-root}
+    volumes:
+      - project-mongo-data:/data/db
+  mongo-express:
+    image: mongo-express
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - 8081:8081
+    depends_on:
+      - mongodb
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER:-root}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-root}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER:-root}:${MONGO_PASSWORD:-root}@mongodb:27017/
+
+  migrator:
+    image: project:${project_VERSION:-latest}
+    restart: "no"
+    command: alembic upgrade head
+    environment:
+      project_DB_HOST: project-db
+      project_DB_PORT: 5432
+      project_DB_USER: project
+      project_DB_PASS: project
+      project_DB_BASE: project
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:7.0.5
+    hostname: "project-redis"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 50
+
+  rmq:
+    image: rabbitmq:3.11-alpine
+    hostname: "project-rmq"
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
+    healthcheck:
+      test: rabbitmq-diagnostics check_running -q
+      interval: 3s
+      timeout: 3s
+      retries: 50
+
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - 8080
+    environment:
+      DOZZLE_LEVEL: trace
+      DOZZLE_BASE: /logs
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 3s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  project-pg-data:
+    name: project-pg-data
+  project-mongo-data:
+    name: project-mongo-data
+
+networks:
+  # Network for traefik.
+  traefik-shared:
+    name: traefik-shared

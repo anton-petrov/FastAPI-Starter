@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      target: development
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    ports:
+      # Exposes application port.
+      - "8000:8000"
+    volumes:
+      # Adds current directory as volume.
+      - .:/app/src/
+    environment:
+      # Enables autoreload.
+      project_RELOAD: "True"
+
+  worker:
+    build:
+      target: development
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    volumes:
+      # Adds current directory as volume.
+      - .:/app/src/
+    environment:
+      # Enables autoreload.
+      project_RELOAD: "True"
+
+  mongodb:
+    ports:
+      - "27017:27017"
+
+  dozzle:
+    ports:
+      - 7777:8080

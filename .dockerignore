@@ -1,0 +1,9 @@
+.gitignore
+.env
+.dockerignore
+.git/
+*.yaml
+deploy/
+.mypy_cache/
+**/__pycache__/
+scripts/

@@ -1,0 +1,64 @@
+version: "3"
+
+interval: "when_changed"
+
+dotenv:
+  - .env
+
+tasks:
+  lint:
+    cmds:
+      - pre-commit run --all-files
+
+  format:
+    cmds:
+      - |
+        autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place . --exclude=__init__.py
+        black --line-length 120 project && black --line-length 120 package
+        isort --float-to-top project
+
+  generate:
+    cmds:
+      - |
+        datamodel-codegen  --use-subclass-enum --use-generic-container-types --disable-appending-item-suffix --strip-default-none \
+        --enum-field-as-literal one --strict-nullable --use-double-quotes --target-python-version 3.11 \
+        --input project/web/api/swagger.yaml --output project/web/api/schema.py
+        
+  ps:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . ps -a
+
+  attach:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . exec api bash
+      
+  dev:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . up -d --build --remove-orphans
+    sources:
+      - ./project/*
+
+  build:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . build --remove-orphans
+
+  stop:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . down
+
+  env:
+    cmds:
+      - export $(grep -v '^#' .env | xargs -0)
+
+  logs:
+    cmds:
+      - docker-compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml --project-directory . logs -f -t
+
+  acr-login:
+    cmds:
+      - az login
+      - az acr login --name <your_subscription_region> --subscription <your_subscription_name>
+
+  acr-push:
+    cmds:
+      - echo Push
